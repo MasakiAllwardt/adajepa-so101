@@ -19,6 +19,44 @@ no real-time constraint on planning/adaptation latency.
    the sim2real reference point.
 4. **Frozen vs AdaJEPA on real** — the actual experiment.
 
+## 0. Getting the artifacts onto the robot machine
+
+Everything the evals need beyond this repo is attached to the GitHub release
+**`handoff-v1`** on `MasakiAllwardt/adajepa-so101` (public, no auth needed):
+
+```sh
+git clone -b so101-sim2real https://github.com/MasakiAllwardt/adajepa-so101.git adajepa
+cd adajepa
+REL=https://github.com/MasakiAllwardt/adajepa-so101/releases/download/handoff-v1
+curl -LO $REL/so101_model.tgz        # 330 MB: hydra.yaml + checkpoints/model_latest.pth
+curl -LO $REL/so101_scene.tgz        # scene.xml, scene_L.xml, assets/ (meshes incl. P.stl)
+curl -LO $REL/so101_pushp_16k_eval.tgz  # stats.json + plan_targets.pkl
+shasum -a 256 -c <<'EOF'
+b32e781032f235d531d1a193d4755208f46cd1eed29974cacfb26ad8e90d7f20  so101_model.tgz
+cad82953431c97f9026c1095b6caebc457b6a4c70b5a390c41a32617247c0004  so101_pushp_16k_eval.tgz
+e86767e0d6d87535b51172c68b7aa6f57b3c443781d66adb96979e5542ec4cbd  so101_scene.tgz
+EOF
+mkdir -p ckpts scene data
+tar xzf so101_model.tgz -C ckpts     # -> ckpts/so101_pushp_..._f5_h3_p1/
+tar xzf so101_scene.tgz -C scene     # -> scene/scene.xml, scene/assets/
+tar xzf so101_pushp_16k_eval.tgz -C data  # -> data/so101_pushp_16k/
+export SO101_SCENE=$PWD/scene/scene.xml
+export DATASET_DIR=$PWD/data
+# plan config: ckpt_base_path: ./ckpts, model_name: so101_pushp_cos1e-2_agg32_projnone_dim384_hw14_sgTrue_lr1e-05_f5_h3_p1
+```
+
+**Note on `hydra.yaml`**: the original (written by `train.py` on the pod) was
+lost with the pod. The bundled copy is reconstructed by composing
+`conf/train.yaml` with the overrides evidenced by the model-dir name and the
+`train.log` header (`training.straighten=cos1e-2`, `training.batch_size=64`,
+`training.decoder_start_epoch=3`, 16k data path; encoder `dinov2_vits14`) and
+cross-checks against every verifiable log line (emb_dim 404 = 384+10+10,
+stop-grad, bf16, Conv1d(4,10)/(10,10) proprio/action encoders). The sim
+blur+adapt n=50 rerun (expected ≈0.66, §6) doubles as its validation — run
+it before trusting the config on the real arm. Paths inside it
+(`/workspace/...`) are pod paths, kept for faithfulness; `plan.py` in
+segments mode never reads them.
+
 ## 1. Physical setup
 
 - Print the block: `~/Documents/SO-ARM100/Simulation/SO101/assets/P.stl`.
