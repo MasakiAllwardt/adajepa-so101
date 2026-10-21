@@ -58,6 +58,13 @@ register(
 )
 
 register(
+    id="so101_pushp",
+    entry_point="env.so101.so101_env:SO101PushWrapper",
+    max_episode_steps=300,
+    reward_threshold=1.0,
+)
+
+register(
     id="wall",
     entry_point="env.wall.wall_env_wrapper:WallEnvWrapper",
     max_episode_steps=300,

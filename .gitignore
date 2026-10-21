@@ -7,3 +7,5 @@ wandb
 checkpoints
 *.slurm
 *.sh
+
+.DS_Store

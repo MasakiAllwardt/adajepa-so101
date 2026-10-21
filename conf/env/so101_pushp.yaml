@@ -1,0 +1,20 @@
+name: so101_pushp
+args: []
+kwargs:
+  with_velocity: true
+  with_target: true
+  # scene_path resolves from $SO101_SCENE, falling back to /so101/scene.xml
+
+dataset:
+  _target_: "datasets.so101_pushp_dset.load_so101_pushp_slice_train_val"
+  with_velocity: true
+  n_rollout: null
+  normalize_action: ${normalize_action}
+  data_path: ${oc.env:DATASET_DIR}/so101_pushp
+  split_ratio: 0.9   # inert: the loader uses the physical train/ and val/ dirs
+  transform:
+    _target_: "datasets.img_transforms.default_transform"
+    img_size: ${img_size}
+
+decoder_path: null
+num_workers: 16

@@ -656,11 +656,20 @@ def planning_main(cfg_dict):
             if dataset_transform_cfg is not None
             else default_transform()
         )
-        if model_cfg.env.name not in ("pusht", "pushobj"):
+        if model_cfg.env.name not in ("pusht", "pushobj", "so101_pushp"):
             raise ValueError(f"segments mode not supported for env '{model_cfg.env.name}'")
-        from datasets.pusht_dset import (
-            ACTION_MEAN, ACTION_STD, STATE_MEAN, STATE_STD, PROPRIO_MEAN, PROPRIO_STD,
-        )
+        if model_cfg.env.name == "so101_pushp":
+            # Metric dataset: stats live in the stats.json collect_data.py writes
+            # at the dataset root, next to plan_targets.pkl.
+            from datasets.so101_pushp_dset import load_stats
+            _stats = load_stats(Path(cfg_dict["eval_data_path"]).parent / "stats.json")
+            ACTION_MEAN, ACTION_STD = _stats["ACTION_MEAN"], _stats["ACTION_STD"]
+            STATE_MEAN, STATE_STD = _stats["STATE_MEAN"], _stats["STATE_STD"]
+            PROPRIO_MEAN, PROPRIO_STD = _stats["PROPRIO_MEAN"], _stats["PROPRIO_STD"]
+        else:
+            from datasets.pusht_dset import (
+                ACTION_MEAN, ACTION_STD, STATE_MEAN, STATE_STD, PROPRIO_MEAN, PROPRIO_STD,
+            )
         dset = SimpleNamespace(
             action_dim=2,
             action_mean=ACTION_MEAN, action_std=ACTION_STD,
